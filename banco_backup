@@ -1,0 +1,123 @@
+-- =========================================================
+--  BANCO DE DADOS DO LEINADOBOT  –  SETUP COMPLETO
+-- =========================================================
+
+-- ======== EXTENSÃO PARA COMPARAR NOMES SEM ACENTO ========
+CREATE EXTENSION IF NOT EXISTS unaccent;
+
+-- ======== TABELAS ========
+
+-- cargos: menor nivel = mais poder
+CREATE TABLE IF NOT EXISTS cargos (
+    id SERIAL PRIMARY KEY,
+    nome TEXT UNIQUE NOT NULL,
+    nivel INT NOT NULL
+);
+
+-- usuários: registra cargo, quem promoveu, quando e bloqueio
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    jid TEXT UNIQUE NOT NULL,
+    cargo_id INT REFERENCES cargos(id),
+    rank_giver_id TEXT,
+    last_rank_date TIMESTAMP,
+    is_blocked BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- comandos: cada comando com nível mínimo exigido e se está ativo
+CREATE TABLE IF NOT EXISTS comandos (
+    id SERIAL PRIMARY KEY,
+    nome TEXT UNIQUE NOT NULL,
+    nivel_minimo INT NOT NULL,
+    ativo BOOLEAN DEFAULT TRUE
+);
+
+-- logs: histórico de uso de comandos (opcional)
+CREATE TABLE IF NOT EXISTS logs (
+    id SERIAL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    alvo_id TEXT,
+    comando TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- contadores: para comandos de contagem (ex.: !perdi, !fazol)
+CREATE TABLE IF NOT EXISTS counters (
+    id SERIAL PRIMARY KEY,
+    counter_name TEXT UNIQUE NOT NULL,
+    value BIGINT DEFAULT 0,
+    last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ======== CARGOS INICIAIS ========
+-- menor nivel = mais poder
+INSERT INTO cargos (nome, nivel) VALUES
+  ('Dono', 0),
+  ('Imperador', 1),
+  ('Comandante', 2),
+  ('Oficial', 3),
+  ('Capitão', 4),
+  ('Recruta', 5)
+ON CONFLICT (nome) DO NOTHING;
+
+-- ======== COMANDOS INICIAIS ========
+INSERT INTO comandos (nome, nivel_minimo, ativo) VALUES
+  ('!ping', 5, TRUE),
+  ('!id', 5, TRUE),
+  ('!help', 5, TRUE),
+  ('!s', 5, TRUE),
+  ('!dado', 5, TRUE),
+  ('!perdi', 5, TRUE),
+  ('!fazol', 5, TRUE),
+  ('!sorteio', 5, TRUE),
+  ('!cargo', 5, TRUE),
+  ('!ranks', 5, TRUE),
+  ('!inicio', 5, TRUE),
+  ('!contato', 5, TRUE),
+  ('!all', 4, TRUE),
+  ('!listarcargos', 4, TRUE),
+  ('!lock', 4, TRUE),
+  ('!ban', 3, TRUE),
+  ('!addcargo', 3, TRUE),
+  ('!removecargo', 3, TRUE),
+  ('!bloquear', 1, TRUE),
+  ('!ia', 1, TRUE),
+  ('!comandossecretos', 1, TRUE),
+  ('!force', 1, TRUE),
+  ('!mass', 0, TRUE),
+  ('!grupos', 0, TRUE),
+  ('!setnivel', 0, TRUE),
+  ('!teste', 0, TRUE)
+ON CONFLICT (nome) DO NOTHING;
+
+-- ======== CONTADORES PADRÃO ========
+INSERT INTO counters (counter_name, value) VALUES
+  ('perdi', 0),
+  ('fazol', 0)
+ON CONFLICT (counter_name) DO NOTHING;
+
+-- ======== USUÁRIO DONO ========
+-- Substitua o JID pelo correto obtido com !id
+INSERT INTO users (jid, cargo_id, rank_giver_id, last_rank_date, is_blocked)
+VALUES (
+    '85156417241313@lid',
+    (SELECT id FROM cargos WHERE nome = 'Dono'),
+    NULL,
+    NOW(),
+    FALSE
+)
+ON CONFLICT (jid) DO UPDATE
+SET cargo_id = EXCLUDED.cargo_id,
+    last_rank_date = NOW(),
+    is_blocked = FALSE;
+
+-- ======== CONSULTAS ÚTEIS ========
+-- Ver usuários e seus cargos
+-- SELECT u.jid, c.nome AS cargo, c.nivel, u.is_blocked FROM users u LEFT JOIN cargos c ON u.cargo_id = c.id;
+--
+-- Ver comandos e níveis
+-- SELECT nome, nivel_minimo, ativo FROM comandos ORDER BY nivel_minimo, nome;
+--
+-- Ver contadores
+-- SELECT * FROM counters;

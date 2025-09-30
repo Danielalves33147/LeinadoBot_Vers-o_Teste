@@ -1,0 +1,19 @@
+{
+  "name": "leinad",
+  "version": "0.1.0",
+  "description": "Bot WhatsApp mínimo (Baileys) para iniciar do zero",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "author": "Daniel",
+  "license": "ISC",
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.6.0",
+    "dotenv": "^16.4.5",
+    "pg": "^8.16.3",
+    "pino": "^8.16.2",
+    "qrcode-terminal": "^0.12.0",
+    "sharp": "^0.34.4"
+  }
+}
